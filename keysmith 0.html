@@ -1,0 +1,781 @@
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width initial-scale=1 viewport-fit=cover" name="viewport"/>
+<title>Keysmith – Free Password Generator</title>
+<style>
+:root{
+  --bg:#050a07;--surface:#0c1a11;--ink:#e8f5ec;--muted:#8fb39a;--line:#1f4a2e;
+  --accent:#22c55e;--accent-ink:#03140a;--weak:#fb923c;--ok:#facc15;--strong:#4ade80;
+  --digit:#7aa2ff;--sym:#f472b6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#050a07;--surface:#0c1a11;--ink:#e8f5ec;--muted:#8fb39a;--line:#1f4a2e;
+    --accent:#22c55e;--accent-ink:#03140a;--weak:#fb923c;--ok:#facc15;--strong:#4ade80;
+    --digit:#7aa2ff;--sym:#f472b6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#050a07;--surface:#0c1a11;--ink:#e8f5ec;--muted:#8fb39a;--line:#1f4a2e;
+  --accent:#22c55e;--accent-ink:#03140a;--weak:#fb923c;--ok:#facc15;--strong:#4ade80;
+  --digit:#7aa2ff;--sym:#f472b6;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;position:relative;isolation:isolate;background:radial-gradient(ellipse at 50% -10%,#0f5a2b 0%,#06180d 45%,#000 100%) fixed,var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+/* Subtle 3D depth grid and floating green light */
+body::before{content:"";position:fixed;inset:-18% -15% -35%;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(74,222,128,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,.12) 1px,transparent 1px),radial-gradient(ellipse at 50% 18%,rgba(34,197,94,.2),transparent 48%);background-size:58px 58px,58px 58px,100% 100%;transform:perspective(700px) rotateX(58deg) scale(1.35);transform-origin:center top;mask-image:linear-gradient(to bottom,rgba(0,0,0,.85),transparent 78%);opacity:.62}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 12% 25%,rgba(34,197,94,.13),transparent 24%),radial-gradient(circle at 88% 72%,rgba(16,185,129,.1),transparent 26%);animation:ambientFloat 18s ease-in-out infinite alternate}
+@keyframes ambientFloat{from{transform:translate3d(-1%,0,0)}to{transform:translate3d(1%,1.5%,0)}}
+@media(prefers-reduced-motion:reduce){body::after{animation:none}}
+main{max-width:1040px;margin:0 auto;padding:36px clamp(18px,3vw,36px) 64px}
+header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:30px;min-height:64px}
+h1{font-size:1.5rem;margin:0;letter-spacing:-.01em}
+.tag{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.theme{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+.out{display:flex;gap:10px;align-items:stretch}
+.pw{flex:1;min-width:0;font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:1.35rem;word-break:break-all;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-height:62px;display:flex;align-items:center}
+.pw span.d{color:var(--digit)}.pw span.s{color:var(--sym)}
+.btn{border:0;border-radius:10px;padding:0 18px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.row .btn{min-height:44px}
+.meter{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:18px}
+.meter i{display:block;height:100%;width:0;background:var(--weak);transition:width .25s,background .25s}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem;margin-top:8px}
+h2{font-size:1.05rem;margin:0 0 14px}
+.len{display:flex;align-items:center;gap:14px}
+.len output{min-width:2.5ch;font-weight:700;font-size:1.2rem}
+input[type=range]{flex:1;accent-color:var(--accent);height:32px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:16px}
+label.opt{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+label.opt input{width:20px;height:20px;accent-color:var(--accent)}
+.opt small{display:block;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.seg button{flex:1;padding:10px;background:transparent;border:0;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.stack{display:grid;gap:18px}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.hist li{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;display:flex;justify-content:space-between;gap:10px}
+.hist code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist button{background:none;border:0;color:var(--accent);font-weight:700}
+.note{color:var(--muted);font-size:.88rem;margin-top:22px}
+header{flex-wrap:wrap;gap:16px}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:8px}
+nav a:hover{color:var(--ink)}
+nav a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.view[hidden]{display:none}
+.doc h2{font-size:1.5rem;margin:0 0 6px}
+.doc h3{font-size:1.05rem;margin:22px 0 6px}
+.doc p,.doc li{max-width:68ch}
+.doc .date{color:var(--muted);margin:0 0 8px}
+.doc a{color:var(--accent)}
+form.contact{display:grid;gap:14px;margin-top:16px;max-width:520px}
+form.contact label{display:grid;gap:6px;font-weight:700}
+form.contact input,form.contact textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+form.contact textarea{min-height:140px;resize:vertical}
+form.contact .btn{min-height:46px;justify-self:start;padding:0 22px}
+footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer a{color:var(--muted)}
+footer nav a{border:1px solid var(--line);padding:8px 14px}
+.btn,.homebtn,.seg button,.hist button,nav a{position:relative;overflow:hidden;transition:box-shadow .3s,transform .15s,filter .3s}
+.btn:active,.homebtn:active,.seg button:active{transform:scale(.97)}
+.shine{box-shadow:0 0 24px 4px var(--accent);filter:brightness(1.3)}
+.shine::after{content:"";position:absolute;top:0;left:-70%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:skewX(-20deg);animation:shine .9s ease-out;pointer-events:none;z-index:2}
+@keyframes shine{to{left:130%}}
+button.shine::after{display:none}
+button.shine{animation:btnshine 1.2s ease-out}
+@keyframes btnshine{
+  0%{background-image:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.95) 50%,transparent 65%);background-size:250% 100%;background-repeat:no-repeat;background-position:150% 0;box-shadow:0 0 0 0 var(--accent);filter:brightness(1)}
+  50%{box-shadow:0 0 26px 6px var(--accent);filter:brightness(1.4)}
+  100%{background-image:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.95) 50%,transparent 65%);background-size:250% 100%;background-repeat:no-repeat;background-position:-50% 0;box-shadow:0 0 0 0 transparent;filter:brightness(1)}
+}
+@media (prefers-reduced-motion:reduce){.shine::after{animation:none}}
+a{position:relative;overflow:clip;display:inline-block;border-radius:6px;transition:box-shadow .3s,filter .3s}
+.hero{padding:clamp(20px,3vw,34px);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(260px,.95fr);align-items:center;gap:clamp(20px,3vw,36px);min-height:310px}
+.hero h2{font-size:clamp(1.8rem,3vw,2.5rem);line-height:1.12;margin:0 0 12px;letter-spacing:-.025em;max-width:15ch}
+.hero p{color:var(--muted);margin:0 0 22px;max-width:48ch;font-size:1.02rem}
+.hero .actions{display:flex;gap:12px;flex-wrap:wrap}
+.hero .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 26px;text-decoration:none;font-size:1rem}
+.hero a.btn.alt{color:var(--ink)}
+.doc ol{padding-left:22px}
+#generator{scroll-margin-top:16px}
+.logo{color:inherit;text-decoration:none;border-radius:16px;line-height:0}
+.logo svg{display:block;width:60px;height:60px}
+.post-list{display:grid;gap:12px;margin-top:16px}
+.post-link{display:block;padding:16px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--ink)}
+.post-link:hover{border-color:var(--accent)}
+.post-link strong{display:block;font-size:1.05rem;margin-bottom:2px}
+.post-link span{color:var(--muted);font-size:.92rem}
+details{border:1px solid var(--line);border-radius:10px;padding:0 16px;margin-top:10px}
+summary{cursor:pointer;padding:14px 0;font-weight:700}
+details[open] summary{color:var(--accent)}
+details p{margin:0 0 14px}
+.homebtn{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:10px;text-decoration:none;margin-bottom:18px;background:var(--accent);color:var(--accent-ink)!important;font-weight:700}
+.chkin{flex:1;min-width:0;font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:1.1rem;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.hint{color:var(--muted);margin:0 0 12px}
+.crack{margin:12px 0 0;font-weight:700}
+.btn.crack{min-height:44px;padding:10px 18px;line-height:1.3;max-width:100%;text-align:center}
+.crack:empty{display:none}
+.tips{margin:12px 0 0;padding-left:20px;color:var(--muted);font-size:.92rem}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:520px){.out .btn{padding:0 14px}.btn.copy{min-height:48px}.pw{font-size:1.15rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Content images */
+.content-visual{display:block;width:100%;height:auto;max-height:280px;object-fit:cover;border-radius:12px;margin:0 0 18px;border:1px solid var(--line)}
+.hero-visual{height:260px;max-height:260px;object-position:center 45%;margin:0;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+.doc-visual{max-height:240px}
+@media(max-width:700px){.hero{grid-template-columns:1fr;gap:20px}.hero-visual{height:210px;max-height:210px;grid-row:1}.hero h2{max-width:none}}
+@media(max-width:520px){.content-visual{max-height:190px}.hero-visual{height:190px;max-height:190px}}
+
+/* Persistent page sidebar */
+body{padding-left:300px}
+body.sidebar-collapsed{padding-left:0}
+.sidebar{position:fixed;z-index:30;inset:0 auto 0 0;width:280px;padding:26px 18px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;background:#07140c;border-right:0;box-shadow:none}.sidebar::-webkit-scrollbar{display:none;width:0;height:0}
+.side-brand{display:flex;align-items:center;gap:10px;padding:8px 10px 22px;color:var(--ink);font-size:1.25rem;font-weight:800;text-decoration:none}
+.side-label{margin:12px 10px 8px;color:var(--muted);font-size:.7rem;font-weight:800;letter-spacing:.13em}
+.sidebar nav.side-links{display:grid;gap:5px}
+.sidebar nav.side-links a{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:9px;color:var(--muted);text-decoration:none;font-size:.92rem}
+.sidebar nav.side-links a:hover{background:#10281a;color:var(--ink)}
+.sidebar nav.side-links a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);font-weight:800}
+.side-articles a{font-size:.84rem!important;padding:8px 12px!important}
+.side-section-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.7rem;font-weight:800;letter-spacing:.13em;text-align:left;padding:10px;margin-top:12px;cursor:pointer}
+.side-section-toggle:hover{color:var(--ink)}
+.side-section-toggle span{font-size:1rem;letter-spacing:0}
+#sideArticles[hidden],#sideSeo[hidden]{display:none}
+.side-guides-label{margin-top:26px}
+.sidebar-cta{display:flex;justify-content:center;align-items:center;margin:18px 6px 22px;padding:11px 12px;border-radius:10px;background:var(--accent);color:var(--accent-ink)!important;font-weight:800;text-decoration:none}
+.sidebar-cta:hover{filter:brightness(1.08)}
+.sidebar nav.side-links a:focus-visible,.sidebar-cta:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+main{max-width:980px;margin:0 auto;padding:32px 28px 56px}
+.menu-toggle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:fixed;z-index:45;top:14px;left:262px;width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer}
+.menu-toggle .menu-line{display:block;width:17px;height:2px;border-radius:2px;background:currentColor;transition:transform .2s ease,opacity .2s ease}
+.menu-toggle[aria-expanded="true"] .menu-line:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.menu-toggle[aria-expanded="true"] .menu-line:nth-child(2){opacity:0}
+.menu-toggle[aria-expanded="true"] .menu-line:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+body.sidebar-collapsed .menu-toggle{left:12px}
+body.sidebar-collapsed .sidebar{transform:translateX(-105%)}
+.sidebar{transition:transform .25s ease}
+.sidebar-scrim{display:none}
+@media(max-width:760px){
+ body{padding-left:0}
+ main{padding:64px 16px 40px}
+ .sidebar{width:min(330px,88vw);transform:translateX(-105%);transition:transform .25s ease;box-shadow:12px 0 35px rgba(0,0,0,.4)}
+ body.sidebar-open .sidebar{transform:translateX(0)}
+ .menu-toggle{display:block;position:fixed;z-index:40;top:12px;left:12px;width:42px;height:42px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);padding:9px 13px;font-weight:700}
+ body.sidebar-open .sidebar-scrim{display:block;position:fixed;z-index:20;inset:0;background:rgba(0,0,0,.55)}
+}
+
+
+
+/* Homepage alignment and responsive card grid */
+.view#view-home .stack{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px;
+  align-items:stretch;
+}
+.view#view-home .stack > .hero{grid-column:1 / -1;}
+.view#view-home .stack > section:not(.hero){
+  min-width:0;
+  height:100%;
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+.view#view-home .stack > section:not(.hero) h2{margin-bottom:12px;}
+.view#view-home .stack > section:not(.hero) p,
+.view#view-home .stack > section:not(.hero) li{line-height:1.7;}
+.view#view-home .stack > section:not(.hero) .post-list{width:100%;}
+p.tag{display:none!important;}
+@media(max-width:760px){
+  .view#view-home .stack{grid-template-columns:minmax(0,1fr);gap:16px;}
+  .view#view-home .stack > .hero{grid-column:auto;}
+  .view#view-home .stack > section:not(.hero){padding:20px;}
+}
+
+.page-faq{margin-top:28px;padding-top:22px;border-top:1px solid var(--line,rgba(255,255,255,.14))}
+.page-faq h2{margin-bottom:10px}
+.page-faq details{padding:14px 16px;margin:10px 0;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:12px;background:rgba(255,255,255,.035)}
+.page-faq summary{cursor:pointer;font-weight:700}
+.page-faq details p{margin:10px 0 0;line-height:1.7}
+
+/* Bold headings, buttons in a row */
+h1,h2,h3,h4,summary,.side-brand{font-weight:800}
+.hero{grid-template-columns:1fr;min-height:0}
+.hero .actions,.actions,.row{display:flex;flex-direction:row;flex-wrap:wrap;gap:12px;align-items:center}
+.out{flex-direction:row!important;flex-wrap:nowrap}
+.out .btn{white-space:nowrap}
+</style>
+</head>
+<body>
+<button class="menu-toggle" id="menuToggle" type="button" aria-expanded="true" aria-label="Hide sidebar" aria-controls="siteSidebar" title="Hide sidebar"><span class="menu-line"></span><span class="menu-line"></span><span class="menu-line"></span></button>
+<aside class="sidebar" id="siteSidebar" aria-label="Website sidebar">
+  <a class="side-brand" href="#home">🔑 Keysmith</a>
+  <p class="side-label">PASSWORD TOOLS</p>
+  <nav class="side-links" aria-label="Password tools">
+    <a data-v="tool" href="#tool">✦ <span>Password Generator</span></a>
+    <a data-v="check" href="#check">✓ <span>Password Strength Checker</span></a>
+  </nav>
+  <p class="side-label">ALL PAGES</p>
+  <nav class="side-links" aria-label="All pages">
+    <a data-v="home" href="#home">⌂ <span>Home</span></a>
+    <a data-v="how" href="#how">ⓘ <span>How it works</span></a>
+    <a data-v="faq" href="#faq">? <span>FAQ</span></a>
+    <a data-v="blog" href="#blog">▤ <span>Blog</span></a>
+    <a data-v="about" href="#about">◎ <span>About us</span></a>
+    <a data-v="privacy" href="#privacy">♧ <span>Privacy policy</span></a>
+    <a data-v="contact" href="#contact">✉ <span>Contact us</span></a>
+  </nav>
+  <button class="side-label side-section-toggle" id="blogArticlesToggle" type="button" aria-expanded="false" aria-controls="sideArticles">BLOG ARTICLES <span aria-hidden="true">＋</span></button>
+  <nav class="side-links side-articles" id="sideArticles" aria-label="Blog articles" hidden>
+    <a data-v="blog-strong-passwords" href="#blog-strong-passwords"><span>Strong passwords</span></a>
+    <a data-v="blog-passphrases" href="#blog-passphrases"><span>Passphrases</span></a>
+    <a data-v="blog-reuse" href="#blog-reuse"><span>Password reuse</span></a>
+    <a data-v="blog-two-factor" href="#blog-two-factor"><span>Two-factor authentication</span></a>
+    <a data-v="blog-phishing" href="#blog-phishing"><span>Spot phishing</span></a>
+    <a data-v="blog-password-manager" href="#blog-password-manager"><span>Password managers</span></a>
+    <a data-v="blog-breach" href="#blog-breach"><span>After a data breach</span></a>
+    <a data-v="blog-annoying-rules" href="#blog-annoying-rules"><span>Annoying password rules</span></a>
+  </nav>
+</aside>
+<div class="sidebar-scrim" id="sidebarScrim"></div>
+<main>
+<header>
+<div>
+<h1><a aria-label="Keysmith home" class="logo" href="#home"><svg aria-hidden="true" role="img" viewbox="0 0 64 64"><rect fill="var(--accent)" height="64" rx="16" width="64"></rect><circle cx="23" cy="32" fill="none" r="9" stroke="var(--accent-ink)" stroke-width="5"></circle><path d="M32 32H52M44 32V41M51 32V39" fill="none" stroke="var(--accent-ink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"></path></svg></a></h1>
+
+</div>
+<nav aria-label="Main">
+<a data-v="home" href="#home">Home</a>
+<a data-v="tool" href="#tool">Create Password</a>
+<a data-v="check" href="#check">Check Password</a>
+</nav>
+</header>
+<div class="view" id="view-home">
+<div class="stack">
+<section aria-label="Welcome" class="card hero">
+<div class="hero-copy">
+<h2>Strong passwords in one click</h2>
+<p>Create a secure random password or passphrase in seconds. Choose your settings and copy your result.</p>
+<div class="actions">
+<a class="btn" href="#tool">Explore generator</a>
+<a class="btn alt" href="#how">How it works</a>
+</div>
+</div>
+</section>
+<section aria-label="Get started" class="card hero">
+<h2>Ready to make one?</h2>
+<p>It takes one click and nothing leaves your browser.</p>
+<div class="actions">
+<a class="btn" href="#tool">Make a password</a>
+<a class="btn alt" href="#faq">Read the FAQ</a>
+</div>
+</section>
+<section aria-label="Why Keysmith" class="card doc">
+<h2>Why we made this</h2>
+<p>Most password tools want you to sign up first. We always found that a bit silly. You just need a good password, so Keysmith gives you one and then gets out of your way.</p>
+<p>No account, no email, no pop-ups. Open it, click, copy, done.</p>
+</section>
+<section aria-label="Three habits" class="card doc">
+<h2>Three habits that matter most</h2>
+<ul>
+<li><strong>One password per account.</strong> It's the single biggest win.</li>
+<li><strong>Make them long.</strong> Sixteen characters beats a short, clever one.</li>
+<li><strong>Turn on two-factor.</strong> Even a stolen password then won't be enough.</li>
+</ul>
+</section>
+<section aria-label="Quick tips" class="card doc">
+<h2>Not sure where to start?</h2>
+<p>Begin with your email. If someone gets into it, they can reset the password on almost everything else. Change that one first, then work through your bank and your phone account.</p>
+<p>Don't try to fix everything in one evening. A few accounts a week is plenty.</p>
+</section>
+<section aria-label="Latest reading" class="card doc">
+<h2>Worth a read</h2>
+<div class="post-list">
+<a class="post-link" href="#blog-breach"><strong>What to do after a data breach</strong><span>Stay calm and work through it in order.</span></a>
+<a class="post-link" href="#blog-annoying-rules"><strong>Why password rules are so annoying</strong><span>And how to live with them.</span></a>
+</div>
+</section>
+</div>
+</div>
+<div class="view" hidden="" id="view-tool">
+<h2>Password Generator</h2>
+<div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px"><a class="homebtn" href="#check">Check a password</a><a class="homebtn" href="#home">Back to home</a></div>
+<div class="stack">
+<section aria-label="Generated password" class="card" id="generator">
+<div class="out">
+<div aria-live="polite" class="pw" id="pw"></div>
+<button class="btn copy" id="copy" type="button">Copy</button>
+</div>
+<div aria-hidden="true" class="meter"><i id="bar"></i></div>
+<div class="meta"><span id="strength">Strength</span><span id="entropy"></span></div>
+<button class="btn crack" id="gcrack" type="button"></button>
+<div class="row">
+<button class="btn" id="gen" type="button">Generate new</button>
+</div>
+</section>
+<section aria-label="Options" class="card">
+<div aria-label="Type" class="seg" role="group">
+<button aria-pressed="true" id="mRandom" type="button">Random</button>
+<button aria-pressed="false" id="mPhrase" type="button">Passphrase</button>
+</div>
+<div id="randomOpts">
+<h2>Length</h2>
+<div class="len">
+<input aria-label="Password length" id="len" max="64" min="6" type="range" value="18"/>
+<output id="lenOut">18</output>
+</div>
+<div class="opts">
+<label class="opt"><input checked="" id="up" type="checkbox"/><span>Uppercase<small>A–Z</small></span></label>
+<label class="opt"><input checked="" id="lo" type="checkbox"/><span>Lowercase<small>a–z</small></span></label>
+<label class="opt"><input checked="" id="di" type="checkbox"/><span>Numbers<small>0–9</small></span></label>
+<label class="opt"><input checked="" id="sy" type="checkbox"/><span>Symbols<small>!@#$%</small></span></label>
+<label class="opt"><input id="amb" type="checkbox"/><span>Skip look-alikes<small>O 0 l 1 I</small></span></label>
+</div>
+</div>
+<div hidden="" id="phraseOpts">
+<h2>Words</h2>
+<div class="len">
+<input aria-label="Number of words" id="words" max="10" min="3" type="range" value="5"/>
+<output id="wordsOut">5</output>
+</div>
+<div class="opts">
+<label class="opt"><input checked="" id="cap" type="checkbox"/><span>Capitalize<small>Word-Word</small></span></label>
+<label class="opt"><input checked="" id="num" type="checkbox"/><span>Add a number<small>at the end</small></span></label>
+</div>
+</div>
+</section>
+
+<section aria-label="Recent" class="card">
+<h2>Saved passwords</h2>
+<ul class="hist" id="hist"><li>Nothing yet. Generate a password.</li></ul>
+<div class="row"><button class="btn alt" id="clearHist" type="button">Clear saved passwords</button></div>
+</section>
+</div>
+<p class="note">Uses your browser’s secure random generator (crypto.getRandomValues). Your last 10 passwords are saved in this browser only so they are still here after you reload. Clear them any time with the button above.</p>
+</div>
+<section class="view card doc" hidden="" id="view-check">
+<div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+<a class="homebtn" href="#tool">Create a password</a>
+<a class="homebtn" href="#home">Back to home</a>
+</div>
+<h2>Password Strength Checker</h2>
+<p>Check the strength of a password and get tips to improve it. The check runs in your browser and your password is not sent to a server.</p>
+<section aria-label="Check your password" class="card">
+<h2>Enter a Password to Check</h2>
+<p class="hint">Type a password to see if it is weak or very strong. It never leaves your browser. Crack time assumes an attacker making 10 billion guesses per second.</p>
+<div class="out">
+<input aria-label="Password to check" autocomplete="off" class="chkin" id="chk" placeholder="Type or paste a password" spellcheck="false" type="password"/>
+<button class="btn alt" id="showChk" type="button">Show</button>
+</div>
+<div aria-hidden="true" class="meter"><i id="cbar"></i></div>
+<div class="meta"><span aria-live="polite" id="cverdict">Enter a password</span><span id="cbits"></span></div>
+<button aria-live="polite" class="btn crack" id="ccrack" type="button"></button>
+<ul class="tips" id="ctips"></ul>
+</section>
+</section>
+<section class="view card doc" hidden="" id="view-how">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>How it works</h2>
+<p>Making a strong password with Keysmith takes four steps.</p>
+<ol>
+<li><strong>Choose your settings.</strong> Pick a length and the types of characters or switch to Passphrase to use random words.</li>
+<li><strong>Generate.</strong> Keysmith makes the password with your browser’s secure random generator. Nothing is sent to a server.</li>
+<li><strong>Check the strength.</strong> The meter shows how strong it is in bits of entropy and the “Time to crack” button estimates how long an attacker would need.</li>
+<li><strong>Copy and keep it.</strong> Copy it into your password manager. Your last 10 passwords stay in this browser and you can clear them any time.</li>
+</ol>
+<h3>Reading the strength meter</h3>
+<ul>
+<li><strong>Weak:</strong> under 50 bits. Easier for an attacker to guess.</li>
+<li><strong>Fair:</strong> 50 to 71 bits.</li>
+<li><strong>Strong:</strong> 72 to 99 bits.</li>
+<li><strong>Excellent:</strong> 100 bits or more.</li>
+</ul>
+<a class="homebtn" href="#tool">Try it now</a>
+</section>
+<section class="view card doc" hidden="" id="view-faq">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>Frequently asked questions</h2>
+<p>Quick answers about how Keysmith works.</p>
+<details><summary>Is Keysmith free?</summary><p>Yes. There is no account no sign-up and no limit on how many passwords you make.</p></details>
+<details><summary>Are my passwords sent to a server or saved?</summary><p>No. Passwords are made in your browser and are never sent anywhere. Your last 10 passwords are saved in your own browser on your device so they are still there after you reload. Use the “Clear saved passwords” button to delete them.</p></details>
+<details><summary>How are the passwords generated?</summary><p>Keysmith uses your browser’s secure random number generator the same one used for cryptography. Each character is picked without bias and a password always includes at least one character from every type you turn on.</p></details>
+<details><summary>How long should my password be?</summary><p>Use at least 12 characters and 16 or more for important accounts such as email and banking. Longer is stronger.</p></details>
+<details><summary>What does “bits of entropy” mean?</summary><p>It measures how unpredictable a password is. Every extra bit doubles the number of guesses an attacker needs. Around 72 bits is strong and 100 bits or more is excellent.</p></details>
+<details><summary>How is the “Time to crack” estimate calculated?</summary><p>It assumes an attacker who can make 10 billion guesses per second and who finds the password after trying half of the possibilities on average. Real attackers may be faster or slower. Sites that limit login attempts make guessing much slower.</p></details>
+<details><summary>Is it safe to type my real password into the checker?</summary><p>The checker runs only in your browser and sends nothing. Even so the safest habit is to test a password that is similar to yours not the one you actually use.</p></details>
+<details><summary>What is a passphrase?</summary><p>A passphrase is several random words joined together. It is easier to type and remember than random symbols. Add more words to make it stronger.</p></details>
+<details><summary>Why should I use a password manager?</summary><p>It remembers a unique strong password for every account so you do not have to. Read more in our <a href="#blog-password-manager">blog post</a>.</p></details>
+</section>
+<section class="view card doc" hidden="" id="view-blog">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>Blog</h2>
+<p>Short practical guides for staying safe online.</p>
+<div class="post-list">
+<a class="post-link" href="#blog-strong-passwords"><strong>How to create a strong password</strong><span>Length randomness and the rules that matter most.</span></a>
+<a class="post-link" href="#blog-passphrases"><strong>Passphrases vs. random passwords</strong><span>Which one to use and when.</span></a>
+<a class="post-link" href="#blog-reuse"><strong>Why you should never reuse a password</strong><span>How one leak can open many accounts.</span></a>
+<a class="post-link" href="#blog-two-factor"><strong>Turn on two-factor authentication</strong><span>The easiest way to protect your key accounts.</span></a>
+<a class="post-link" href="#blog-phishing"><strong>How to spot a phishing message</strong><span>Warning signs and what to do if you clicked.</span></a>
+<a class="post-link" href="#blog-password-manager"><strong>Do you need a password manager?</strong><span>What it does and how to choose one.</span></a>
+<a class="post-link" href="#blog-breach"><strong>What to do after a data breach</strong><span>Stay calm and work through it in order.</span></a>
+<a class="post-link" href="#blog-annoying-rules"><strong>Why password rules are so annoying</strong><span>And how to live with them.</span></a>
+</div>
+</section>
+<section class="view card doc" hidden="" id="view-blog-strong-passwords">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>How to create a strong password</h2>
+<p>A strong password is long unpredictable and used on only one account. Length matters most: every extra character multiplies the number of guesses an attacker needs.</p>
+<h3>The rules that matter</h3>
+<ul>
+<li>Use at least 12 characters and 16 or more for important accounts.</li>
+<li>Let a generator choose the characters instead of inventing them yourself.</li>
+<li>Avoid names birthdays pet names and patterns such as qwerty or 123456.</li>
+<li>Never use the same password on two accounts.</li>
+</ul>
+<h3>Try it</h3>
+<p>Make one with the generator on the <a href="#tool">generator page</a> then check its “Time to crack” estimate.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-passphrases">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>Passphrases vs. random passwords</h2>
+<p>A passphrase is several random words joined together such as Cedar-Lantern-Orbit-Maple. It is easier to type and remember than a string of symbols and its strength comes from how many words you pick at random. Five or more is a good start.</p>
+<h3>Which should you use?</h3>
+<ul>
+<li>Use a passphrase for things you must remember: your device login and your password manager.</li>
+<li>Use a random character password for everything else and let a password manager remember it.</li>
+</ul>
+<p>The words must be chosen randomly. A song lyric a quote or a phrase that means something to you is much easier to guess.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-reuse">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>Why you should never reuse a password</h2>
+<p>When a website is breached attackers take the leaked emails and passwords and try them on other sites. This is called credential stuffing. If you reuse a password one leak can open your email shopping and banking accounts.</p>
+<p>A strong password does not help if it is reused. The site that leaks it may have stored it poorly and you cannot control that.</p>
+<h3>What to do</h3>
+<ul>
+<li>Give every account its own password.</li>
+<li>Start with your email bank and phone accounts since they can reset everything else.</li>
+<li>Change a password right away if a service tells you it was breached.</li>
+</ul>
+</section>
+<section class="view card doc" hidden="" id="view-blog-two-factor">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>Turn on two-factor authentication</h2>
+<p>Two-factor authentication (2FA) asks for a second proof of identity in addition to your password. Even if someone learns your password they cannot sign in without it.</p>
+<h3>Common types strongest first</h3>
+<ul>
+<li>Passkeys and hardware security keys.</li>
+<li>Codes from an authenticator app.</li>
+<li>Codes sent by text message. This is better than nothing but the weakest option.</li>
+</ul>
+<h3>Where to start</h3>
+<p>Turn it on for your email banking and social media accounts first. Save the backup codes somewhere safe and offline so you can still get in if you lose your phone.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-phishing">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>How to spot a phishing message</h2>
+<p>Phishing messages try to trick you into handing over your password or a security code. They often pretend to be a bank a delivery company or your employer.</p>
+<h3>Warning signs</h3>
+<ul>
+<li>Urgent threats such as “your account will be closed today.”</li>
+<li>A sender address that does not match the company’s real domain.</li>
+<li>Links you did not expect or a login page you reached from a message.</li>
+<li>Any request for your password or a code. Real companies do not ask for these.</li>
+</ul>
+<h3>If you clicked</h3>
+<p>Do not enter anything. If you already typed a password change it immediately change it anywhere else you used it and turn on 2FA. To check an account type the website’s address yourself or open its app.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-password-manager">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>Do you need a password manager?</h2>
+<p>For most people yes. A password manager creates a unique password for each account stores them securely and fills them in for you. It also only fills a password on the matching website which helps protect you from fake login pages.</p>
+<h3>How to use one well</h3>
+<ul>
+<li>Protect it with a long passphrase that you do not use anywhere else.</li>
+<li>Turn on 2FA for the manager itself.</li>
+<li>Choose one from a reputable provider. The one built into your phone or browser is a fine place to start.</li>
+</ul>
+<p>Avoid keeping passwords in a notes app a spreadsheet or on paper left in view.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-breach">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>What to do after a data breach</h2>
+<p>You get an email saying a company you use was hacked. It's a horrible feeling, but it's also very common, and you can sort it out in about twenty minutes.</p>
+<h3>Do these in order</h3>
+<ol>
+<li><strong>Change the password for that account.</strong> Pick a brand new one, not a small tweak of the old one.</li>
+<li><strong>Change it anywhere else you used it.</strong> This is why reusing passwords hurts so much.</li>
+<li><strong>Turn on two-factor.</strong> If the site offers it, switch it on now.</li>
+<li><strong>Watch your email for odd messages.</strong> Attackers often follow a breach with convincing fake emails.</li>
+</ol>
+<p>If the breach included card or bank details, call your bank. They've seen it many times and can help quickly.</p>
+</section>
+<section class="view card doc" hidden="" id="view-blog-annoying-rules">
+<a class="homebtn" href="#blog">Back to blog</a>
+<h2>Why password rules are so annoying</h2>
+<p>"Must contain a capital letter, a number and a symbol, but not your name." We've all stared at that box and sighed.</p>
+<p>Those rules were meant to stop easy guesses. The trouble is people end up with <em>Summer2026!</em>, which ticks every box and is still easy to guess.</p>
+<h3>What actually works</h3>
+<ul>
+<li>Length matters more than odd characters.</li>
+<li>Random beats clever, every time.</li>
+<li>Let a generator or a password manager do the remembering.</li>
+</ul>
+<p>When a site has silly limits, such as no symbols or a maximum length, just switch those options off in the generator and make a new one.</p>
+</section>
+<section class="view card doc" hidden="" id="view-about">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>About us</h2>
+<p>Keysmith is a free tool that makes strong random passwords and passphrases. We built it because a good password should take one click not an account.</p>
+<h3>What we believe</h3>
+<p>Your passwords are yours. Keysmith creates them on your device and shows them to you. Nothing is sent to us. There are no sign-ups no ads and no tracking.</p>
+<h3>Who's behind it</h3>
+<p>Keysmith is a small project. A friend once told us her whole family shared one password for everything, and she wasn't even embarrassed. Most people do something like it, because good habits feel like a chore. We wanted to take the chore out.</p>
+<h3>What we won't do</h3>
+<p>We won't ask for your email, show you ads, or sell anything. We also won't tell you that a password makes you unhackable, because nothing does. It just makes you a much harder target.</p>
+<h3>Tell us what's missing</h3>
+<p>If something confuses you or you've got an idea, write to us on the <a href="#contact">contact page</a>. We read everything.</p>
+</section>
+<section class="view card doc" hidden="" id="view-privacy">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>Privacy policy</h2>
+<p class="date">Last updated: November 18 2026</p>
+<h3>The short version</h3>
+<p>Keysmith does not collect send or store your passwords or any personal information.</p>
+<h3>Passwords you generate</h3>
+<p>Passwords are created locally in your browser. They are never sent to a server. Your last 10 passwords are saved in your own browser so they are still there after you reload. They stay on your device and you can delete them any time with the “Clear saved passwords” button.</p>
+<h3>Data we collect</h3>
+<p>None. We do not use cookies analytics advertising or third-party trackers.</p>
+<h3>Contacting us</h3>
+<p>If you send a message through the contact page it opens in your own email app and is sent from your account. We use your name email address and message only to reply to you.</p>
+<h3>Cookies and local storage</h3>
+<p>Keysmith does not use cookies. It uses your browser’s local storage only to keep your last 10 passwords on your device. We cannot see this data.</p>
+<h3>Your choices</h3>
+<p>You can delete saved passwords at any time with the “Clear saved passwords” button or by clearing your browser’s site data.</p>
+<h3>Third parties</h3>
+<p>We do not sell or share data because we do not collect any. Links to other sites are outside our control so check their policies.</p>
+<h3>Children</h3>
+<p>Keysmith is a general-purpose tool and does not knowingly collect information from anyone including children.</p>
+<h3>Changes to this policy</h3>
+<p>If this policy changes we will update the date above.</p>
+<h3>Questions</h3>
+<p>Reach us on the <a href="#contact">contact page</a>.</p>
+</section>
+<section class="view card doc" hidden="" id="view-contact">
+<a class="homebtn" href="#home">Back to home</a>
+<h2>Contact us</h2>
+<p>Questions bug reports or ideas? Send us a message and we will reply by email.</p>
+<form class="contact" id="contactForm">
+<label>Your name<input autocomplete="name" id="cName" required=""/></label>
+<label>Your email<input autocomplete="email" id="cEmail" required="" type="email"/></label>
+<label>Message<textarea id="cMsg" required=""></textarea></label>
+<button class="btn" type="submit">Send message</button>
+</form>
+<p class="date" style="margin-top:16px">Sending opens your email app with the message filled in. You can also write to <a href="mailto:hello@keysmith.example">hello@keysmith.example</a>.</p>
+</section>
+<footer>
+<span>© 2026 Keysmith</span>
+<nav aria-label="Footer"><a data-v="about" href="#about">About us</a><a data-v="blog" href="#blog">Blog</a><a data-v="faq" href="#faq">FAQ</a><a data-v="privacy" href="#privacy">Privacy policy</a><a data-v="contact" href="#contact">Contact us</a></nav>
+</footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const $=id=>document.getElementById(id);
+const WORDS=("able acid acorn actor adapt agile alarm album amber angle ankle apple arena argue armor arrow aspen atlas attic audio bacon badge baker basin beach beacon berry bison blade blank blast bloom board bonus brave bread brick bridge brook brush cabin cable camel candy canoe canyon carbon cargo cedar chair chalk charm chess cider cliff clock cloud clover cobalt comet coral cotton crane crater creek crisp crown cycle daisy delta denim desert diary dingo dolphin dragon dream drift eagle earth echo elbow ember engine fabric falcon feather fern ferry fiber field flame flint flute forest fossil frost galaxy garden garlic gazelle ginger glacier globe grain granite grape gravel harbor hazel heron hollow honey horizon hover icicle island ivory jacket jaguar jasper jelly jungle kettle kiwi ladder lagoon lantern laurel lemon lizard lotus lumber magnet mango maple marble meadow melon mirror mocha monsoon mosaic nectar noodle nugget oasis olive onyx orbit orchid otter oyster paddle panda pebble pepper piano pilot planet plum pocket prism puzzle quartz quiver rabbit radar rapid raven reef ribbon river rocket saddle safari salmon sandal sketch slate solar spruce stream summit tangle thunder timber tulip tundra turtle velvet violet walnut willow window winter yonder zephyr zigzag").split(" ");
+const SETS={up:"ABCDEFGHIJKLMNOPQRSTUVWXYZ",lo:"abcdefghijklmnopqrstuvwxyz",di:"0123456789",sy:"!@#$%^&*()-_=+[]{};:,.?/~"};
+const AMB=/[O0lI1|]/g;
+let mode="random",history=[];
+function loadHist(){try{const h=JSON.parse(localStorage.getItem("keysmith-history")||"[]");if(Array.isArray(h))history=h.filter(x=>x&&typeof x.p==="string"&&typeof x.bits==="number").slice(0,10)}catch(e){}}
+function saveHist(){try{localStorage.setItem("keysmith-history",JSON.stringify(history))}catch(e){}}
+loadHist();
+
+function rnd(n){ // unbiased random int in [0,n)
+  const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;
+  do{crypto.getRandomValues(a)}while(a[0]>=lim);
+  return a[0]%n;
+}
+function build(){
+  if(mode==="phrase"){
+    const n=+$("words").value;let w=[];
+    for(let i=0;i<n;i++){let x=WORDS[rnd(WORDS.length)];if($("cap").checked)x=x[0].toUpperCase()+x.slice(1);w.push(x)}
+    let p=w.join("-"),bits=n*Math.log2(WORDS.length);
+    if($("num").checked){p+="-"+(rnd(90)+10);bits+=Math.log2(90)}
+    return{p,bits};
+  }
+  const keys=["up","lo","di","sy"].filter(k=>$(k).checked);
+  if(!keys.length){$("lo").checked=true;keys.push("lo")}
+  const clean=s=>$("amb").checked?s.replace(AMB,""):s;
+  const sets=keys.map(k=>clean(SETS[k]));
+  const all=sets.join("");const len=+$("len").value;
+  const out=sets.map(s=>s[rnd(s.length)]); // guarantee one of each
+  while(out.length<len)out.push(all[rnd(all.length)]);
+  for(let i=out.length-1;i>0;i--){const j=rnd(i+1);[out[i],out[j]]=[out[j],out[i]]}
+  const p=out.slice(0,len).join("");
+  return{p,bits:len*Math.log2(all.length)};
+}
+function render(p){
+  const el=$("pw");el.textContent="";
+  for(const c of p){
+    const s=document.createElement("span");
+    if(/\d/.test(c))s.className="d";else if(/[^A-Za-z0-9]/.test(c)&&c!=="-"||(c==="-"&&mode==="random"))s.className="s";
+    s.textContent=c;el.appendChild(s);
+  }
+}
+function rate(bits){
+  const pct=Math.min(100,bits/128*100);
+  let l="Weak",c="var(--weak)";
+  if(bits>=100){l="Excellent";c="var(--strong)"}else if(bits>=72){l="Strong";c="var(--strong)"}else if(bits>=50){l="Fair";c="var(--ok)"}
+  $("bar").style.width=pct+"%";$("bar").style.background=c;
+  $("strength").textContent=l;$("entropy").textContent=Math.round(bits)+" bits of entropy";
+  $("gcrack").textContent="Time to crack: "+crackTime(bits);
+}
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),1600)}
+async function copy(t){
+  try{await navigator.clipboard.writeText(t);toast("Copied")}
+  catch(e){const r=document.createRange();r.selectNodeContents($("pw"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Press Ctrl+C to copy")}
+}
+function drawHist(){
+  const ul=$("hist");ul.textContent="";
+  if(!history.length){ul.innerHTML="<li>Nothing yet. Generate a password.</li>";return}
+  history.forEach(h=>{const p=h.p;
+    const li=document.createElement("li"),c=document.createElement("code"),b=document.createElement("button");
+    c.textContent=p;b.type="button";b.textContent="Copy";b.onclick=()=>copy(p);
+    li.append(c,b);ul.appendChild(li);
+  });
+}
+function gen(){
+  const{p,bits}=build();render(p);rate(bits);$("pw").dataset.v=p;
+  history=[{p,bits},...history].slice(0,10);saveHist();drawHist();
+}
+function setMode(m){
+  mode=m;
+  $("mRandom").setAttribute("aria-pressed",m==="random");
+  $("mPhrase").setAttribute("aria-pressed",m==="phrase");
+  $("randomOpts").hidden=m!=="random";$("phraseOpts").hidden=m!=="phrase";
+  gen();
+}
+$("gen").onclick=gen;
+$("copy").onclick=()=>copy($("pw").dataset.v||"");
+$("mRandom").onclick=()=>setMode("random");
+$("mPhrase").onclick=()=>setMode("phrase");
+$("len").oninput=e=>{$("lenOut").textContent=e.target.value;gen()};
+$("words").oninput=e=>{$("wordsOut").textContent=e.target.value;gen()};
+document.querySelectorAll("input[type=checkbox]").forEach(c=>c.onchange=gen);
+function crackTime(bits){
+  const secs=Math.pow(2,Math.max(bits,1)-1)/1e10; // average case, 10 billion guesses per second
+  const u=(n,w)=>n+" "+w+(n===1?"":"s");
+  if(secs<1)return "instantly";
+  if(secs<60)return u(Math.round(secs),"second");
+  if(secs<3600)return u(Math.round(secs/60),"minute");
+  if(secs<86400)return u(Math.round(secs/3600),"hour");
+  if(secs<31536000)return u(Math.round(secs/86400),"day");
+  const y=secs/31536000;
+  if(y<1000)return u(Math.round(y),"year");
+  if(y<1e6)return Math.round(y/1e3).toLocaleString()+" thousand years";
+  if(y<1e9)return Math.round(y/1e6).toLocaleString()+" million years";
+  if(y<1.4e10)return (Math.round(y/1e8)/10)+" billion years";
+  return "longer than the age of the universe";
+}
+const COMMON=["password","123456","12345678","123456789","1234567890","qwerty","qwerty123","abc123","letmein","admin","welcome","iloveyou","monkey","dragon","football","111111","123123","password1","login","princess","sunshine","master","hello","freedom","whatever","trustno1","000000","passw0rd"];
+function checkPw(){
+  const p=$("chk").value,bar=$("cbar"),v=$("cverdict"),b=$("cbits"),t=$("ctips");
+  t.textContent="";
+  if(!p){bar.style.width="0";v.textContent="Enter a password";b.textContent="";$("ccrack").textContent="";return}
+  let pool=0;
+  if(/[a-z]/.test(p))pool+=26;if(/[A-Z]/.test(p))pool+=26;if(/\d/.test(p))pool+=10;if(/[^A-Za-z0-9]/.test(p))pool+=32;
+  let pred=0;
+  for(let i=1;i<p.length;i++){const d=p.charCodeAt(i)-p.charCodeAt(i-1);if(d===0||(i>1&&Math.abs(d)===1&&p.charCodeAt(i-1)-p.charCodeAt(i-2)===d))pred++}
+  let bits=(p.length-pred*0.7)*Math.log2(pool||1);
+  const low=p.toLowerCase(),letters=low.replace(/[^a-z]/g,""),tips=[];
+  if(COMMON.includes(low)||(letters.length>3&&COMMON.includes(letters))){bits=Math.min(bits,18);tips.push("This is a very common password. Pick something unique.")}
+  else if(COMMON.some(w=>w.length>=5&&low.includes(w))){bits=Math.max(0,bits-25);tips.push("It contains a common word or pattern.")}
+  if(p.length<12)tips.push("Use at least 12 characters.");
+  if(!/[A-Z]/.test(p)||!/[a-z]/.test(p))tips.push("Mix uppercase and lowercase letters.");
+  if(!/\d/.test(p))tips.push("Add a number.");
+  if(!/[^A-Za-z0-9]/.test(p))tips.push("Add a symbol such as ! or #.");
+  if(pred>=3)tips.push("Avoid repeated characters and runs like abc or 123.");
+  let lvl=bits<28?0:bits<40?1:bits<60?2:bits<80?3:4;
+  if(p.length<8)lvl=Math.min(lvl,1);
+  const L=["Very weak","Weak","Fair","Strong","Very strong"],C=["var(--weak)","var(--weak)","var(--ok)","var(--strong)","var(--strong)"];
+  bar.style.width=(lvl+1)*20+"%";bar.style.background=C[lvl];
+  v.textContent=L[lvl];b.textContent=Math.round(bits)+" bits";
+  $("ccrack").textContent="Time to crack: "+crackTime(bits);
+  if(lvl===4&&!tips.length)tips.push("Great password. Keep it in a password manager.");
+  tips.slice(0,4).forEach(x=>{const li=document.createElement("li");li.textContent=x;t.appendChild(li)});
+}
+$("chk").oninput=checkPw;
+$("showChk").onclick=()=>{const i=$("chk"),h=i.type==="password";i.type=h?"text":"password";$("showChk").textContent=h?"Hide":"Show"};
+const VIEWS={home:"Keysmith – Free Password Generator",about:"About us – Keysmith",privacy:"Privacy policy – Keysmith",contact:"Contact us – Keysmith",blog:"Blog – Keysmith",faq:"FAQ – Keysmith",how:"How it works – Keysmith",tool:"Password Generator – Keysmith",check:"Password Strength Checker – Keysmith","blog-strong-passwords":"How to create a strong password – Keysmith","blog-passphrases":"Passphrases vs. random passwords – Keysmith","blog-reuse":"Why you should never reuse a password – Keysmith","blog-two-factor":"Turn on two-factor authentication – Keysmith","blog-phishing":"How to spot a phishing message – Keysmith","blog-password-manager":"Do you need a password manager? – Keysmith","blog-breach":"What to do after a data breach – Keysmith","blog-annoying-rules":"Why password rules are so annoying – Keysmith"};
+function route(v){
+  if(typeof v!=="string")v=location.hash.replace("#","");if(!VIEWS[v])v="home";
+  document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="view-"+v);
+  document.querySelectorAll("nav a").forEach(a=>{const active=(v==="blog"||v.startsWith("blog-"))?a.dataset.v==="blog":a.dataset.v===v;if(active)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  document.title=VIEWS[v];window.scrollTo(0,0);
+}
+addEventListener("hashchange",route);
+const blogArticlesToggle=document.getElementById("blogArticlesToggle"),sideArticles=document.getElementById("sideArticles");
+function setupSidebarSection(toggle,content){
+  toggle.addEventListener("click",()=>{
+    const expanded=toggle.getAttribute("aria-expanded")==="true";
+    toggle.setAttribute("aria-expanded",String(!expanded));
+    content.hidden=expanded;
+    toggle.querySelector("span").textContent=expanded?"＋":"−";
+  });
+}
+setupSidebarSection(blogArticlesToggle,sideArticles);
+const menuToggle=document.getElementById("menuToggle"),sidebarScrim=document.getElementById("sidebarScrim");
+const mobileSidebar=()=>window.matchMedia("(max-width:760px)").matches;
+function syncSidebarButton(){
+  const open=mobileSidebar()?document.body.classList.contains("sidebar-open"):!document.body.classList.contains("sidebar-collapsed");
+  menuToggle.setAttribute("aria-expanded",String(open));
+  menuToggle.setAttribute("aria-label",open?"Hide sidebar":"Show sidebar");
+  menuToggle.setAttribute("title",open?"Hide sidebar":"Show sidebar");
+  menuToggle.dataset.state=open?"open":"closed";
+}
+function closeSidebar(){document.body.classList.remove("sidebar-open");syncSidebarButton()}
+menuToggle.addEventListener("click",()=>{
+  if(mobileSidebar())document.body.classList.toggle("sidebar-open");
+  else document.body.classList.toggle("sidebar-collapsed");
+  syncSidebarButton();
+});
+sidebarScrim.addEventListener("click",closeSidebar);
+window.addEventListener("resize",()=>{document.body.classList.remove("sidebar-open");syncSidebarButton()});
+syncSidebarButton();
+function shine(e){
+  const b=e.target.closest("button,a");if(!b)return;
+  clearTimeout(b._t);b.classList.remove("shine");void b.offsetWidth;b.classList.add("shine");
+  b._t=setTimeout(()=>b.classList.remove("shine"),1300);
+}
+document.addEventListener("pointerdown",e=>{if(e.target.closest("button"))shine(e)});
+document.addEventListener("click",e=>{if(e.detail===0||e.target.closest("a"))shine(e)});
+document.addEventListener("click",e=>{
+  const a=e.target.closest('a[href^="#"]');if(!a)return;
+  e.preventDefault();
+  const v=a.getAttribute("href").slice(1);
+  if(a.closest(".sidebar"))closeSidebar();
+  route(v);
+  try{location.hash=v}catch(x){}
+});
+$("contactForm").onsubmit=e=>{
+  e.preventDefault();
+  const body="Name: "+$("cName").value+"\nEmail: "+$("cEmail").value+"\n\n"+$("cMsg").value;
+  location.href="mailto:hello@keysmith.example?subject="+encodeURIComponent("Keysmith message from "+$("cName").value)+"&body="+encodeURIComponent(body);
+  toast("Opening your email app");
+};
+$("clearHist").onclick=()=>{history=[];saveHist();drawHist();toast("Saved passwords cleared")};
+route();
+if(history.length){const h=history[0];render(h.p);rate(h.bits);$("pw").dataset.v=h.p;drawHist()}else gen();
+</script>
+</body>
+</html>
